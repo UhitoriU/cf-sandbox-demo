@@ -59,3 +59,17 @@ document.querySelector("#btnOom64").onclick = () =>
   run(fetch("/api/oom?mb=64"));
 
 document.querySelector("#btnFetch").onclic
+
+document.querySelector("#btnFetchBurst").onclick = () =>
+  run(fetch("/api/fetch_burst?url=https://example.com&n=20"));
+
+document.querySelector("#btnPayload1m").onclick = async () => {
+  const bytes = 1024 * 1024;
+  const body = new Uint8Array(bytes);
+  const r = await fetch("/api/payload?maxReadMb=10", {
+    method: "POST",
+    headers: { "content-type": "application/octet-stream" },
+    body,
+  });
+  run(Promise.resolve(r));
+};
