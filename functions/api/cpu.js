@@ -1,11 +1,10 @@
-function clamp(n, min, max, fallback) {
+function clampInt(n, min, max, fallback) {
   const x = Number(n);
   if (!Number.isFinite(x)) return fallback;
-  return Math.max(min, Math.min(max, x));
+  return Math.max(min, Math.min(max, Math.floor(x)));
 }
 
-function burnSomeCpu(iterations) {
-  // 做一点不可被完全优化的计算
+function burn(iterations) {
   let x = 0;
   for (let i = 0; i < iterations; i++) {
     x = (x + Math.imul(i ^ 0x9e3779b1, 2654435761)) | 0;
@@ -15,34 +14,30 @@ function burnSomeCpu(iterations) {
 
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  const ms = clamp(url.searchParams.get("ms"), 1, 10000, 200); // 最多 10s
-  const chunkMs = clamp(url.searchParams.get("chunkMs"), 5, 50, 10); // 每段 10ms 左右
-  const iterPerChunk = clamp(url.searchParams.get("iter"), 5_000, 500_000, 80_000);
 
-  const start = Date.now();
-  let chunks = 0;
+  // 关键：用“工作量”而不是“目标毫秒”
+  const chunks = clampInt(url.searchParams.get("chunks"), 1, 2000, 50);
+  const iter = clampInt(url.searchParams.get("iter"), 1000, 2_000_000, 30_000);
+
+  const t0 = Date.now();
   let acc = 0;
 
-  while (Date.now() - start < ms) {
-    acc ^= burnSomeCpu(iterPerChunk);
-    chunks += 1;
-
-    // 关键：让出事件循环，避免被当成“无休止占用 CPU”
+  // 每个 chunk 做一点计算，并 yield 一下（防止被当成死循环）
+  for (let c = 0; c < chunks; c++) {
+    acc ^= burn(iter);
     await Promise.resolve();
   }
 
-  const elapsed = Date.now() - start;
-
+  const t1 = Date.now();
   return Response.json({
     ok: true,
     route: "/api/cpu",
-    mode: "yielding",
-    requestedMs: ms,
-    elapsedMs: elapsed,
+    mode: "workload",
     chunks,
+    iter,
+    elapsedMs: t1 - t0,
     acc,
-    now: new Date().toISOString(),
     colo: context.request.cf?.colo ?? null,
-    note: "This probe yields to the event loop to better approximate realistic CPU work.",
+    note: "Increase chunks/iter until you hit 503 to find practical CPU budget.",
   });
 }
