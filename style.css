@@ -1,0 +1,23 @@
+body {
+    font-family: ui-sans-serif, system-ui;
+    padding: 24px;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+button {
+    padding: 10px 14px;
+    cursor: pointer;
+}
+
+pre {
+    background: #111;
+    color: #ddd;
+    padding: 12px;
+    border-radius: 8px;
+    overflow: auto;
+}
