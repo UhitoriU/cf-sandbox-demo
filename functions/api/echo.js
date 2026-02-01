@@ -4,5 +4,6 @@ export async function onRequestPost(context) {
     ok: true,
     route: "/api/echo",
     got: body,
+    now: new Date().toISOString(),
   });
 }

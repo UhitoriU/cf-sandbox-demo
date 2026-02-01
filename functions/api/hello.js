@@ -6,7 +6,9 @@ export async function onRequest(context) {
   return Response.json({
     ok: true,
     route: "/api/hello",
-    colo: context.request.cf?.colo,     // 观察边缘节点信息（可能为空，取决于请求与环境）
     now: new Date().toISOString(),
+    colo: context.request.cf?.colo ?? null,
+    country: context.request.cf?.country ?? null,
+    asn: context.request.cf?.asn ?? null,
   });
 }

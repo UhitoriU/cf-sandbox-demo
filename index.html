@@ -8,12 +8,28 @@
 </head>
 
 <body>
-    <h1>CF Pages + Functions Demo</h1>
+    <h1>CF Pages + Functions Sandbox Probes</h1>
 
     <div class="row">
         <button id="btnHello">GET /api/hello</button>
         <button id="btnEcho">POST /api/echo</button>
-        <button id="btnError">触发 500</button>
+        <button id="btn500">触发 500</button>
+    </div>
+
+    <div class="row">
+        <button id="btnCapability">GET /api/capability</button>
+        <button id="btnInstance">GET /api/instance</button>
+        <button id="btnCounter">GET /api/counter</button>
+    </div>
+
+    <div class="row">
+        <button id="btnCpu200">CPU busy 200ms</button>
+        <button id="btnCpu2000">CPU busy 2000ms</button>
+        <button id="btnOom64">OOM try 64MB</button>
+    </div>
+
+    <div class="row">
+        <button id="btnFetch">Fetch example.com</button>
     </div>
 
     <pre id="out">点击按钮开始测试…</pre>
