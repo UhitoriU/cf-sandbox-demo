@@ -1,19 +1,9 @@
-function safeTypeof(name) {
-  try {
-    // eslint-disable-next-line no-eval
-    return typeof eval(name);
-  } catch {
-    return "unavailable";
-  }
-}
-
 function tryRequire(moduleName) {
   try {
-    // 注意：require 可能不存在，这里用 eval 避免打包器静态分析
-    // eslint-disable-next-line no-eval
-    const req = eval("typeof require !== 'undefined' ? require : undefined");
-    if (!req) return { ok: false, reason: "require is undefined" };
-    req(moduleName);
+    if (typeof require === "undefined") {
+      return { ok: false, reason: "require is undefined" };
+    }
+    require(moduleName);
     return { ok: true, note: "require succeeded (unexpected in most CF runtimes)" };
   } catch (e) {
     return { ok: false, error: { name: e?.name, message: e?.message } };
@@ -21,6 +11,18 @@ function tryRequire(moduleName) {
 }
 
 export async function onRequest(context) {
+  const hasProcess = typeof process !== "undefined";
+  const hasRequire = typeof require !== "undefined";
+
+  let processEnvKeys = null;
+  try {
+    processEnvKeys = hasProcess && process?.env
+      ? Object.keys(process.env).slice(0, 20)
+      : null;
+  } catch (e) {
+    processEnvKeys = { error: { name: e?.name, message: e?.message } };
+  }
+
   const result = {
     runtime: "cloudflare-pages-functions",
     now: new Date().toISOString(),
@@ -30,11 +32,11 @@ export async function onRequest(context) {
       hasSubtle: typeof crypto?.subtle !== "undefined",
     },
     nodeLike: {
-      typeofProcess: safeTypeof("process"),
-      typeofRequire: safeTypeof("require"),
-      processEnvKeys: null,
-      requireNodeFs: null,
-      requireChildProcess: null,
+      hasProcess,
+      hasRequire,
+      processEnvKeys,
+      requireNodeFs: tryRequire("node:fs"),
+      requireChildProcess: tryRequire("node:child_process"),
     },
     cf: {
       colo: context.request.cf?.colo ?? null,
@@ -42,20 +44,6 @@ export async function onRequest(context) {
       tlsVersion: context.request.cf?.tlsVersion ?? null,
     },
   };
-
-  // process.env keys
-  try {
-    // eslint-disable-next-line no-eval
-    const p = eval("typeof process !== 'undefined' ? process : undefined");
-    result.nodeLike.processEnvKeys =
-      p?.env ? Object.keys(p.env).slice(0, 20) : null;
-  } catch (e) {
-    result.nodeLike.processEnvKeys = { error: String(e) };
-  }
-
-  // 真正负面测试：require node:fs / node:child_process（预期失败）
-  result.nodeLike.requireNodeFs = tryRequire("node:fs");
-  result.nodeLike.requireChildProcess = tryRequire("node:child_process");
 
   return Response.json(result);
 }
